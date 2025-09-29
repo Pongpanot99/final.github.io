@@ -63,7 +63,7 @@ pmremGenerator.compileEquirectangularShader();
 new THREE.RGBELoader()
   .setDataType(THREE.UnsignedByteType)
   .load(
-    'https://raw.githubusercontent.com/Pongpanot99/Pongpanot99.github.io-Kafka/main/studio_small_08_2k.hdr',
+    'https://raw.githubusercontent.com/Pongpanot99/final.github.io/main/puresky_2k.hdr',
     (hdrTexture) => {
       const envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
       scene.background = envMap;
