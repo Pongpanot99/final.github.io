@@ -42,13 +42,23 @@ camera.lookAt(0, 1, 0);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
 // Floor
-const planeGeometry = new THREE.PlaneGeometry(20, 20);
-const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
-const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-plane.rotation.x = -Math.PI / 2;
-plane.position.y = 0;
-plane.receiveShadow = true;
-scene.add(plane);
+const textureLoader = new THREE.TextureLoader();
+const floorTexture = textureLoader.load('https://raw.githubusercontent.com/Pongpanot99/final.github.io/main/p1.jpg');
+floorTexture.wrapS = THREE.RepeatWrapping;
+floorTexture.wrapT = THREE.RepeatWrapping;
+floorTexture.repeat.set(10, 10);
+const floorGeometry = new THREE.PlaneGeometry(20, 20);
+const floorMaterial = new THREE.MeshStandardMaterial({ 
+  map: floorTexture,
+  roughness: 0.0
+});
+const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+const material1 = new THREE.MeshStandardMaterial({ color: 0xA9A9A9, metalness: 0.0, roughness: 0.0 });
+const material2 = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.9, roughness: 0.2 });
 
 
 const loader = new THREE.OBJLoader();
@@ -59,9 +69,7 @@ const loader = new THREE.OBJLoader();
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
-                    child.material = new THREE.MeshStandardMaterial({
-                        color: 0xffffff
-                    });
+                    child.material = material1 ;
                 }
             });
             object.scale.set(0.2, 0.2, 0.2);
@@ -70,8 +78,24 @@ const loader = new THREE.OBJLoader();
             console.error('Error loading OBJ:', error);
         });
 
-
-
+        loader.load('https://raw.githubusercontent.com/Pongpanot99/final.github.io/main/name.obj', function (object2) {
+            object2.castShadow = true; // ✅ วัตถุนี้สร้างเงา
+            // ตั้งค่า castShadow กับทุก mesh ใน object
+            object2.traverse(function (child) {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    child.material = material2 ;
+                }
+            });
+            object2.scale.set(0.5, 0.5, 0.5);
+            object2.rotation.set(0,8,0);
+            object2.position.set(0, 0.5, 0)
+            scene.add(object2);
+            
+        }, undefined, function (error) {
+            console.error('Error loading OBJ:', error);
+        });
 
 // Lights
 const directionalLight = new THREE.DirectionalLight(0xffeedd, 0.9);
