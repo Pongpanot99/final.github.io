@@ -37,8 +37,8 @@ const scene = new THREE.Scene();
 
 // Camera
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-camera.position.set(8, 2, 0);
-camera.lookAt(0, 1, 0);
+camera.position.set(10, 3, 0);
+camera.lookAt(0, 5, 0);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
 // Floor (เปลี่ยนเป็นวงกลม)
@@ -211,6 +211,7 @@ const clickable = [];
     scene.add(mesh);
     clickable.push(mesh);
 
+
     // ถ้ามี text ให้สร้าง TextMesh อยู่ตรงกลาง mesh
     if (text) {
         const loader = new THREE.FontLoader();
@@ -234,6 +235,7 @@ const clickable = [];
             const textMesh = new THREE.Mesh(textGeometry, textMaterial);
             textMesh.position.copy(pos);
             scene.add(textMesh);
+            textMesh.rotation.y = Math.PI / 2;
             clickable.push(textMesh);
         });
     }
@@ -242,29 +244,47 @@ const clickable = [];
 }
 
           addObj(
-          new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8),glassMaterial),new THREE.Vector3(10, 4, 0),'Box','go'
+          new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16),glassMaterial),new THREE.Vector3(5, 4, 5),'Box','SH'
           );
 
           addObj(
-                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(3.0, 1.0, 3.0),'OK','Ku'
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(5, 2.5, 5),'OK','Ku'
             );
 
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(5.0, 1.0, 5.0),
+                'FogCircle',' Fog '
+            );
+
+          addObj(
+          new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16),glassMaterial),new THREE.Vector3(3, 4, -4),'UFO','UFO'
+          );
+
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(3, 2.5, -4),'HHH',
+            );
+
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(3, 1.0, -4.0),
+                'Fishman','Fish'
+            );
+         
           addObj(
                 new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(12.0, 1.0, 14.0),'OB','Back'
             );
 
-          addObj(
-                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(1.0, 1.0, 1.0),
-                'FogCircle',' Fog '
-            );
+          
            
 
             // --- พรีเซ็ตตำแหน่งกล้องต่อวัตถุ (กำหนดง่าย ๆ) ---
             const VIEWS = {
                 Box: { pos: new THREE.Vector3(10, 2, 10), tar: new THREE.Vector3(5, 2, 0) },
                 OK: { pos: new THREE.Vector3(19, 3, 12), tar: new THREE.Vector3(0, 0.45, 0) },
-                OB: { pos: new THREE.Vector3(5, 3, 5), tar: new THREE.Vector3(0, 0.45, 0) },
+                OB: { pos: new THREE.Vector3(10, 3, 0), tar: new THREE.Vector3(0, 0.45, 0) },
                 FogCircle: { pos: new THREE.Vector3(3, 1.6, -2.0), tar: new THREE.Vector3(2, 0.5, 0) },
+                UFO: { pos: new THREE.Vector3(19, 3, 12), tar: new THREE.Vector3(0, 0.45, 0) },
+                HH: { pos: new THREE.Vector3(10, 3, 0), tar: new THREE.Vector3(0, 0.45, 0) },
+                Fishman: { pos: new THREE.Vector3(9, 2.5, -0.5), tar: new THREE.Vector3(10, 3 , -4.5) },
             };
 
             // --- Raycaster + คลิกเพื่อสลับมุม ---
@@ -291,11 +311,24 @@ const clickable = [];
                 //pickedObjPostion = hit.object.position;
                 if (!view) return;
 
+                if (hit.object.name === 'Box') {
+        if (followMode === "shark") {
+            followMode = null;
+            console.log("🟢 Stop following shark");
+        } else {
+            followMode = "shark";
+            console.log("🦈 Start following shark");
+        }
+        return; // ไม่ต้องเปลี่ยนมุมกล้องแบบอื่น
+        }
                 if (hit.object.name === 'FogCircle') {
                 fogEnabled = !fogEnabled; // สลับสถานะ
                 toggleFog(fogEnabled);
-                return; // ไม่ต้องเปลี่ยนกล้อง
+                followMode = null;
+                return; 
                 }
+
+                followMode = null;
 
                 camTargetPos.copy(view.pos);
                 camTargetLook.copy(view.tar);
@@ -459,6 +492,7 @@ scene.add(ufoLight);
 let camTargetPos = camera.position.clone();
 let camTargetLook = controls.target.clone();
 let isMovingToTarget = false;
+let followMode = null; 
 let clock = new THREE.Clock();
 let fogEnabled = true;
 
@@ -472,7 +506,6 @@ function animate() {
   }
 }
   controls.update();
-
   const t = clock.getElapsedTime();
 
   if (waterModel) {
@@ -510,9 +543,34 @@ function animate() {
   ufoUniforms.time.value += clock.getDelta();
   ufoUniforms.hoverHeight.value = Math.sin(clock.elapsedTime * 2.0) * 0.3;
 }
+  if (followMode === "shark" && sharkModel) {
+  const sharkPos = sharkModel.position.clone();
+
+  const offset = new THREE.Vector3(5, 4, 5);
   
-  //fogEnabled = false; 
-  //toggleFog(fogEnabled);
+  // ให้กล้องอยู่ด้านหลังตามทิศหมุนของฉลาม
+  const rotationY = sharkModel.rotation.y;
+ const rotatedOffset = offset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY + Math.PI / 2);
+
+  const targetCamPos = sharkPos.clone().add(rotatedOffset);
+  camera.position.lerp(targetCamPos, 0.05); // เคลื่อนกล้องนุ่มนวล
+  const targetLook = sharkPos.clone().add(new THREE.Vector3(0, 3, 0));
+  controls.target.lerp(targetLook, 0.1);
+}
+  if (followMode === "UFO" && ufo) {
+  const ufoPos = ufo.position.clone();
+
+  const offset = new THREE.Vector3(5, 4, 5);
+  
+  // ให้กล้องอยู่ด้านหลังตามทิศหมุนของฉลาม
+  const rotationY = ufo.rotation.y;
+ const rotatedOffset = offset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY + Math.PI / 2);
+
+  const targetCamPos = ufoPos.clone().add(rotatedOffset);
+  camera.position.lerp(targetCamPos, 0.05); // เคลื่อนกล้องนุ่มนวล
+  const targetLook = sharkPos.clone().add(new THREE.Vector3(0, 3, 0));
+  controls.target.lerp(targetLook, 0.1);
+}
   updateRain();
   
   renderer.render(scene, camera);
@@ -521,4 +579,4 @@ function animate() {
 animate();
 </script>
 </body>
-</html>
+</html> 
