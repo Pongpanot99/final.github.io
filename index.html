@@ -261,7 +261,7 @@ const clickable = [];
           );
 
           addObj(
-                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(3, 2.5, -4),'HHH',
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(3, 2.5, -4),'HHH','H'
             );
 
           addObj(
@@ -273,9 +273,6 @@ const clickable = [];
                 new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(12.0, 1.0, 14.0),'OB','Back'
             );
 
-          
-           
-
             // --- พรีเซ็ตตำแหน่งกล้องต่อวัตถุ (กำหนดง่าย ๆ) ---
             const VIEWS = {
                 Box: { pos: new THREE.Vector3(10, 2, 10), tar: new THREE.Vector3(5, 2, 0) },
@@ -283,7 +280,7 @@ const clickable = [];
                 OB: { pos: new THREE.Vector3(10, 3, 0), tar: new THREE.Vector3(0, 0.45, 0) },
                 FogCircle: { pos: new THREE.Vector3(3, 1.6, -2.0), tar: new THREE.Vector3(2, 0.5, 0) },
                 UFO: { pos: new THREE.Vector3(19, 3, 12), tar: new THREE.Vector3(0, 0.45, 0) },
-                HH: { pos: new THREE.Vector3(10, 3, 0), tar: new THREE.Vector3(0, 0.45, 0) },
+                HHH: { pos: new THREE.Vector3(20, 15, 15), tar: new THREE.Vector3(0, 0.45, 0) },
                 Fishman: { pos: new THREE.Vector3(9, 2.5, -0.5), tar: new THREE.Vector3(10, 3 , -4.5) },
             };
 
@@ -321,6 +318,18 @@ const clickable = [];
         }
         return; // ไม่ต้องเปลี่ยนมุมกล้องแบบอื่น
         }
+
+if (hit.object.name === 'UFO') {
+    if (followMode === "UFO") {
+        followMode = null;
+        console.log("🟢 Stop following UFO");
+    } else {
+        followMode = "UFO";
+        console.log("🛸 Start following UFO");
+    }
+    return; // ไม่ต้องเปลี่ยนมุมกล้องแบบอื่น
+}
+
                 if (hit.object.name === 'FogCircle') {
                 fogEnabled = !fogEnabled; // สลับสถานะ
                 toggleFog(fogEnabled);
@@ -557,20 +566,26 @@ function animate() {
   const targetLook = sharkPos.clone().add(new THREE.Vector3(0, 3, 0));
   controls.target.lerp(targetLook, 0.1);
 }
-  if (followMode === "UFO" && ufo) {
+
+if (followMode === "UFO" && ufo) {
   const ufoPos = ufo.position.clone();
 
   const offset = new THREE.Vector3(5, 4, 5);
   
-  // ให้กล้องอยู่ด้านหลังตามทิศหมุนของฉลาม
-  const rotationY = ufo.rotation.y;
- const rotatedOffset = offset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY + Math.PI / 2);
+  // ให้กล้องอยู่ด้านหลังตามทิศทางของ UFO (หมุนรอบศูนย์กลางเหมือนฉลาม)
+  const rotationY = Math.atan2(
+    -Math.sin(clock.elapsedTime * 0.2),
+    Math.cos(clock.elapsedTime * 0.2)
+  );
+
+  const rotatedOffset = offset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY + Math.PI / 2);
 
   const targetCamPos = ufoPos.clone().add(rotatedOffset);
   camera.position.lerp(targetCamPos, 0.05); // เคลื่อนกล้องนุ่มนวล
-  const targetLook = sharkPos.clone().add(new THREE.Vector3(0, 3, 0));
+  const targetLook = ufoPos.clone().add(new THREE.Vector3(0, 1.5, 0));
   controls.target.lerp(targetLook, 0.1);
 }
+
   updateRain();
   
   renderer.render(scene, camera);
