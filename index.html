@@ -185,11 +185,6 @@ directionalLight.position.set(10, 5, 10);
 directionalLight.castShadow = true;
 scene.add(directionalLight);
 
-let pointLight = new THREE.PointLight(0xffffff, 10, 5); // (สี, ความเข้ม, ระยะ)
-pointLight.position.set(10, 1, -12);
-scene.add(pointLight);  
-
-
 // HDRI
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 pmremGenerator.compileEquirectangularShader();
@@ -206,62 +201,70 @@ new THREE.RGBELoader()
     }
   );
 
-  //click
-const loader = new THREE.FontLoader();
-  const clickable = [];
+//click
+const clickable = [];
 
-  function addObj(mesh, pos, name) {
+  function addObj(mesh, pos, name, text = null, fontUrl = 
+  'https://threejs.org/examples/fonts/helvetiker_regular.typeface.json' , ) {
     mesh.position.copy(pos);
     mesh.name = name;
     scene.add(mesh);
     clickable.push(mesh);
+
+    // ถ้ามี text ให้สร้าง TextMesh อยู่ตรงกลาง mesh
+    if (text) {
+        const loader = new THREE.FontLoader();
+        loader.load(fontUrl, function (font) {
+            const textGeometry = new THREE.TextGeometry(text, {
+                font: font,
+                size: 0.4,
+                height: 0.05,
+                curveSegments: 12
+            });
+            textGeometry.center(); // จัดให้ตรงกลาง
+
+            const textMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFFcCcC,
+                metalness: 0.9,
+                roughness: 0.2,
+                emissive: 0x009099, 
+                emissiveIntensity: 1 
+            });
+
+            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            textMesh.position.copy(pos);
+            scene.add(textMesh);
+            clickable.push(textMesh);
+        });
+    }
+
     return mesh;
-            }
+}
 
-            addObj(
-          new THREE.Mesh(
-          new THREE.BoxGeometry(0.8, 0.8, 0.8),
-          material),new THREE.Vector3(12, 4, 12),
-          'Box'
-           );
+          addObj(
+          new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8),glassMaterial),new THREE.Vector3(10, 4, 0),'Box','go'
+          );
 
-loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
-    
-    // สร้างข้อความ KU
-    const textGeometry = new THREE.TextGeometry('KU', {
-        font: font,
-        size: 0.3,       // ขนาดตัวอักษร
-        height: 0.1,   // ความหนา
-        curveSegments: 12,
-
-    });
-   
-    const textMaterial = new THREE.MeshStandardMaterial({
-        color: 0x00ff00,
-        metalness: 0.9,
-        roughness: 0.2
-    });
-    const kuText = new THREE.Mesh(textGeometry, textMaterial);
-});
-
-            addObj(
-                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),
-                new THREE.Vector3(3.0, 1.0, 3.0),
-                'Sphere'
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(3.0, 1.0, 3.0),'OK','Ku'
             );
 
-            addObj(
-                new THREE.Mesh(new THREE.ConeGeometry(0.5, 1, 24), new THREE.MeshBasicMaterial({ color: 0x5db6ff })),
-                new THREE.Vector3(2, 0.5, 0),
-                'Cone'
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(12.0, 1.0, 14.0),'OB','Back'
+            );
+
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(1.0, 1.0, 1.0),
+                'FogCircle',' Fog '
             );
            
 
             // --- พรีเซ็ตตำแหน่งกล้องต่อวัตถุ (กำหนดง่าย ๆ) ---
             const VIEWS = {
-                Box: { pos: new THREE.Vector3(-3, 1.4, 1.6), tar: new THREE.Vector3(-2, 0.4, 0) },
-                Sphere: { pos: new THREE.Vector3(19, 3, 12), tar: new THREE.Vector3(0, 0.45, 0) },
-                Cone: { pos: new THREE.Vector3(3, 1.6, -2.0), tar: new THREE.Vector3(2, 0.5, 0) },
+                Box: { pos: new THREE.Vector3(10, 2, 10), tar: new THREE.Vector3(5, 2, 0) },
+                OK: { pos: new THREE.Vector3(19, 3, 12), tar: new THREE.Vector3(0, 0.45, 0) },
+                OB: { pos: new THREE.Vector3(5, 3, 5), tar: new THREE.Vector3(0, 0.45, 0) },
+                FogCircle: { pos: new THREE.Vector3(3, 1.6, -2.0), tar: new THREE.Vector3(2, 0.5, 0) },
             };
 
             // --- Raycaster + คลิกเพื่อสลับมุม ---
@@ -285,13 +288,18 @@ loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json
                 if (!hit) 
                     return;
                 const view = VIEWS[hit.object.name];
-                pickedObjPostion = hit.object.position;
+                //pickedObjPostion = hit.object.position;
                 if (!view) return;
 
-                // ย้ายแบบทันที (ถ้าอยากนุ่ม ๆ ค่อยเสริม lerp ทีหลัง)
-                camera.position.copy(view.pos);
-                //controls.target.copy(view.tar);
-                controls.update();
+                if (hit.object.name === 'FogCircle') {
+                fogEnabled = !fogEnabled; // สลับสถานะ
+                toggleFog(fogEnabled);
+                return; // ไม่ต้องเปลี่ยนกล้อง
+                }
+
+                camTargetPos.copy(view.pos);
+                camTargetLook.copy(view.tar);
+                isMovingToTarget = true;
             }
 
             renderer.domElement.addEventListener('click', onPick);
@@ -303,7 +311,7 @@ loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json
                 renderer.setSize(innerWidth, innerHeight);
             });
             function lerp(a, b, t) {
-                return a + (b - a) * t;   // t ใน [0..1]
+                return a + (b - a) * t;  
             }
 
 // Rain 
@@ -363,12 +371,14 @@ function updateRain() {
 }
 initRain();           
 
-scene.fog = new THREE.Fog(0x222233, 5, 15);
+// สร้าง Fog 
+const defaultFog = new THREE.Fog(0x222233, 5, 15);
+scene.fog = defaultFog;
 function toggleFog(enable) {
     if (enable) {
-        scene.fog = new THREE.Fog(0x222233, 5, 40); // เปิด fog
+        scene.fog = defaultFog; 
     } else {
-        scene.fog = null; // ปิด fog
+        scene.fog = null; 
     }
 }
 
@@ -446,12 +456,23 @@ ufoLight.position.set(10, 1, -12);
 scene.add(ufoLight);
 
 //////
+let camTargetPos = camera.position.clone();
+let camTargetLook = controls.target.clone();
+let isMovingToTarget = false;
 let clock = new THREE.Clock();
 let fogEnabled = true;
 
 function animate() {
+  if (isMovingToTarget) {
+  camera.position.lerp(camTargetPos, 0.05);
+  controls.target.lerp(camTargetLook, 0.05);
+  
+  if (camera.position.distanceTo(camTargetPos) < 0.01) {
+    isMovingToTarget = false;
+  }
+}
   controls.update();
-  controls.target.lerp(pickedObjPostion,0.02)
+
   const t = clock.getElapsedTime();
 
   if (waterModel) {
@@ -465,13 +486,11 @@ function animate() {
   const radius = 18; // รัศมีรอบเสา (อยากให้ใกล้/ไกลก็เปลี่ยนได้)
   const speed = 0.2 ; // ความเร็วรอบ
   const angle = t * speed;
-
   const centerX = 0;
   const centerZ = 0;
+
   sharkModel.position.x = centerX + Math.cos(angle) * radius;
   sharkModel.position.z = centerZ + Math.sin(angle) * radius;
-  pointLight.position.z = centerZ + Math.sin(angle) * radius;
-  pointLight.position.x = centerX + Math.cos(angle) * radius;
   
   // ขยับขึ้นลงเล็กน้อยให้เหมือนว่ายน้ำ
   sharkModel.position.y = -2.8 + Math.sin(t * 2) * 0.2;
@@ -492,8 +511,8 @@ function animate() {
   ufoUniforms.hoverHeight.value = Math.sin(clock.elapsedTime * 2.0) * 0.3;
 }
   
-  fogEnabled = false; 
-  toggleFog(fogEnabled);
+  //fogEnabled = false; 
+  //toggleFog(fogEnabled);
   updateRain();
   
   renderer.render(scene, camera);
