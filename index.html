@@ -25,6 +25,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/TextGeometry.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.18/+esm"></script>
 
     <script>
 const renderer = new THREE.WebGLRenderer();
@@ -40,6 +41,15 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHei
 camera.position.set(10, 3, 0);
 camera.lookAt(0, 5, 0);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+//Light
+const ambientLight = new THREE.AmbientLight(0x202030, 1);
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+directionalLight.position.set(10, 5, 10);
+directionalLight.castShadow = true;
+scene.add(directionalLight);
 
 // Floor (เปลี่ยนเป็นวงกลม)
 const textureLoader = new THREE.TextureLoader();
@@ -80,13 +90,25 @@ facePlane.rotation.set(0, 45, 0);
 scene.add(facePlane);
 
 
-const material = new THREE.MeshStandardMaterial({ color: 0xA9A9A9, metalness: 0.9, roughness: 0.2 });
-const glassMaterial = new THREE.MeshPhysicalMaterial({color: 0xfaaaff,metalness: 0,roughness: 0,transmission: 1.0,
-transparent: true,opacity: 1.0,ior: 1.5,thickness: 0.5,clearcoat: 1.0,clearcoatRoughness: 0 });
+// HDRI
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+pmremGenerator.compileEquirectangularShader();
+
+new THREE.RGBELoader()
+  .setDataType(THREE.UnsignedByteType)
+  .load( 'https://raw.githubusercontent.com/Pongpanot99/final.github.io/main/puresky_2k.hdr',
+    (hdrTexture) => {
+      const envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
+      scene.background = envMap;
+      scene.environment = envMap;
+      hdrTexture.dispose();
+      pmremGenerator.dispose();
+    }
+  );
 
 
-  // โหลดโมเดลหลัก
-  const gltfLoader = new THREE.GLTFLoader();
+// โหลดโมเดลหลัก
+const gltfLoader = new THREE.GLTFLoader();
 
 let waterModel; // ประกาศตัวแปรเก็บโมเดลไว้ข้างนอก
 gltfLoader.load("https://raw.githubusercontent.com/Pongpanot99/final.github.io/main/water.glb", function(gltf) {
@@ -142,6 +164,15 @@ gltfLoader.load("https://pongpanot99.github.io/final.github.io/shark.glb", funct
   }
 );
 
+gltfLoader.load("https://raw.githubusercontent.com/Pongpanot99/final.github.io/main/columbina.glb", function(gltf) {
+    const model = gltf.scene;
+    model.scale.set(180, 180, 180);
+    model.traverse(c => { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; }});
+    scene.add(model);
+    model.position.set(3 , 0.5, 0);
+    model.rotation.set(0 , 45 , 0);
+  });
+
 gltfLoader.load("https://raw.githubusercontent.com/Pongpanot99/final.github.io/main/fisherman.glb", function(gltf) {
     const model = gltf.scene;
     model.scale.set(0.01, 0.01, 0.01);
@@ -176,30 +207,9 @@ gltfLoader.load("https://raw.githubusercontent.com/Pongpanot99/final.github.io/m
     model.rotation.set(0 , 45 , 0);
   });
 
-//Light
-const ambientLight = new THREE.AmbientLight(0x202030, 0.4);
-scene.add(ambientLight);
-
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
-directionalLight.position.set(10, 5, 10);
-directionalLight.castShadow = true;
-scene.add(directionalLight);
-
-// HDRI
-const pmremGenerator = new THREE.PMREMGenerator(renderer);
-pmremGenerator.compileEquirectangularShader();
-
-new THREE.RGBELoader()
-  .setDataType(THREE.UnsignedByteType)
-  .load( 'https://raw.githubusercontent.com/Pongpanot99/final.github.io/main/puresky_2k.hdr',
-    (hdrTexture) => {
-      const envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
-      scene.background = envMap;
-      scene.environment = envMap;
-      hdrTexture.dispose();
-      pmremGenerator.dispose();
-    }
-  );
+const material = new THREE.MeshStandardMaterial({ color: 0xA9A9A9, metalness: 0.9, roughness: 0.2 });
+const glassMaterial = new THREE.MeshPhysicalMaterial({color: 0xfaaaff,metalness: 0,roughness: 0,transmission: 1.0,
+transparent: true,opacity: 1.0,ior: 1.5,thickness: 0.5,clearcoat: 1.0,clearcoatRoughness: 0 });
 
 //click
 const clickable = [];
@@ -319,7 +329,7 @@ const clickable = [];
         return; // ไม่ต้องเปลี่ยนมุมกล้องแบบอื่น
         }
 
-if (hit.object.name === 'UFO') {
+                if (hit.object.name === 'UFO') {
     if (followMode === "UFO") {
         followMode = null;
         console.log("🟢 Stop following UFO");
@@ -496,6 +506,8 @@ scene.add(ufo);
 const ufoLight = new THREE.PointLight(0x4e56c0, 100, 5);
 ufoLight.position.set(10, 1, -12);
 scene.add(ufoLight);
+
+
 
 //////
 let camTargetPos = camera.position.clone();
