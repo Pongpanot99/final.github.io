@@ -25,9 +25,12 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/TextGeometry.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Reflector.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.18/+esm"></script>
+    
 
     <script>
+      
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -51,23 +54,44 @@ directionalLight.position.set(10, 5, 10);
 directionalLight.castShadow = true;
 scene.add(directionalLight);
 
-// Floor (เปลี่ยนเป็นวงกลม)
+const floorGeometry = new THREE.CircleGeometry(12, 64);
+const mirror = new THREE.Reflector(floorGeometry, {
+  clipBias: 0.003,
+  textureWidth: window.innerWidth * window.devicePixelRatio,
+  textureHeight: window.innerHeight * window.devicePixelRatio,
+  color: 0x007070,
+});
+mirror.rotation.x = -Math.PI / 2;
+mirror.position.set(0, 0.31, 0);
+scene.add(mirror);
+
+// ตัวแปรควบคุมพื้น
+let floorEnabled = true;
+
+// ฟังก์ชันเปิด–ปิดพื้น
+function toggleFloor(enabled) {
+  floor.visible = enabled;
+  console.log(`Floor visible: ${enabled}`);
+}
+
+// --- พื้นวงกลม ---
 const textureLoader = new THREE.TextureLoader();
 const floorTexture = textureLoader.load('https://raw.githubusercontent.com/Pongpanot99/final.github.io/main/p1.jpg');
 floorTexture.wrapS = THREE.RepeatWrapping;
 floorTexture.wrapT = THREE.RepeatWrapping;
-floorTexture.repeat.set(4, 4); 
+floorTexture.repeat.set(4, 4);
 
-const floorGeometry = new THREE.CircleGeometry(12, 64);
-const floorMaterial = new THREE.MeshStandardMaterial({ 
+const floor2Geometry = new THREE.CircleGeometry(12, 64);
+const floorMaterial = new THREE.MeshStandardMaterial({
   map: floorTexture,
   roughness: 0.0
 });
-const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+const floor = new THREE.Mesh(floor2Geometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
+floor.position.set(0, 0.32, 0);
 scene.add(floor);
-floor.position.set(0, 0.31, 0);
+
 
 const pillarHeight = 0.3; // ความสูงเสา
 const pillarGeometry = new THREE.CylinderGeometry(12, 12, pillarHeight, 64);
@@ -88,7 +112,6 @@ const facePlane = new THREE.Mesh(
 facePlane.position.set(12, 4, 12);
 facePlane.rotation.set(0, 45, 0);
 scene.add(facePlane);
-
 
 // HDRI
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -207,234 +230,6 @@ gltfLoader.load("https://raw.githubusercontent.com/Pongpanot99/final.github.io/m
     model.rotation.set(0 , 45 , 0);
   });
 
-const material = new THREE.MeshStandardMaterial({ color: 0xA9A9A9, metalness: 0.9, roughness: 0.2 });
-const glassMaterial = new THREE.MeshPhysicalMaterial({color: 0xfaaaff,metalness: 0,roughness: 0,transmission: 1.0,
-transparent: true,opacity: 1.0,ior: 1.5,thickness: 0.5,clearcoat: 1.0,clearcoatRoughness: 0 });
-
-//click
-const clickable = [];
-
-  function addObj(mesh, pos, name, text = null, fontUrl = 
-  'https://threejs.org/examples/fonts/helvetiker_regular.typeface.json' , ) {
-    mesh.position.copy(pos);
-    mesh.name = name;
-    scene.add(mesh);
-    clickable.push(mesh);
-
-
-    // ถ้ามี text ให้สร้าง TextMesh อยู่ตรงกลาง mesh
-    if (text) {
-        const loader = new THREE.FontLoader();
-        loader.load(fontUrl, function (font) {
-            const textGeometry = new THREE.TextGeometry(text, {
-                font: font,
-                size: 0.4,
-                height: 0.05,
-                curveSegments: 12
-            });
-            textGeometry.center(); // จัดให้ตรงกลาง
-
-            const textMaterial = new THREE.MeshStandardMaterial({
-                color: 0xFFcCcC,
-                metalness: 0.9,
-                roughness: 0.2,
-                emissive: 0x009099, 
-                emissiveIntensity: 1 
-            });
-
-            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-            textMesh.position.copy(pos);
-            scene.add(textMesh);
-            textMesh.rotation.y = Math.PI / 2;
-            clickable.push(textMesh);
-        });
-    }
-
-    return mesh;
-}
-
-          addObj(
-          new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16),glassMaterial),new THREE.Vector3(5, 4, 5),'Box','SH'
-          );
-
-          addObj(
-                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(5, 2.5, 5),'OK','Ku'
-            );
-
-          addObj(
-                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(5.0, 1.0, 5.0),
-                'FogCircle',' Fog '
-            );
-
-          addObj(
-          new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16),glassMaterial),new THREE.Vector3(3, 4, -4),'UFO','UFO'
-          );
-
-          addObj(
-                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(3, 2.5, -4),'HHH','H'
-            );
-
-          addObj(
-                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(3, 1.0, -4.0),
-                'Fishman','Fish'
-            );
-         
-          addObj(
-                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(12.0, 1.0, 14.0),'OB','Back'
-            );
-
-            // --- พรีเซ็ตตำแหน่งกล้องต่อวัตถุ (กำหนดง่าย ๆ) ---
-            const VIEWS = {
-                Box: { pos: new THREE.Vector3(10, 2, 10), tar: new THREE.Vector3(5, 2, 0) },
-                OK: { pos: new THREE.Vector3(19, 3, 12), tar: new THREE.Vector3(0, 0.45, 0) },
-                OB: { pos: new THREE.Vector3(10, 3, 0), tar: new THREE.Vector3(0, 0.45, 0) },
-                FogCircle: { pos: new THREE.Vector3(3, 1.6, -2.0), tar: new THREE.Vector3(2, 0.5, 0) },
-                UFO: { pos: new THREE.Vector3(19, 3, 12), tar: new THREE.Vector3(0, 0.45, 0) },
-                HHH: { pos: new THREE.Vector3(20, 15, 15), tar: new THREE.Vector3(0, 0.45, 0) },
-                Fishman: { pos: new THREE.Vector3(9, 2.5, -0.5), tar: new THREE.Vector3(10, 3 , -4.5) },
-            };
-
-            // --- Raycaster + คลิกเพื่อสลับมุม ---
-            const raycaster = new THREE.Raycaster();
-            const pointer = new THREE.Vector2();
-            let pickedObjPostion = new THREE.Vector3();
-
-            function setPointer(e) {
-                const r = renderer.domElement.getBoundingClientRect();
-                const x = (e.clientX ?? e.touches[0].clientX) - r.left;
-                const y = (e.clientY ?? e.touches[0].clientY) - r.top;
-                pointer.x = (x / r.width) * 2 - 1;
-                pointer.y = -(y / r.height) * 2 + 1;
-
-            }
-
-            function onPick(e) {
-                setPointer(e);
-                raycaster.setFromCamera(pointer, camera);
-                const hit = raycaster.intersectObjects(clickable, false)[0];
-                if (!hit) 
-                    return;
-                const view = VIEWS[hit.object.name];
-                //pickedObjPostion = hit.object.position;
-                if (!view) return;
-
-                if (hit.object.name === 'Box') {
-        if (followMode === "shark") {
-            followMode = null;
-            console.log("🟢 Stop following shark");
-        } else {
-            followMode = "shark";
-            console.log("🦈 Start following shark");
-        }
-        return; // ไม่ต้องเปลี่ยนมุมกล้องแบบอื่น
-        }
-
-                if (hit.object.name === 'UFO') {
-    if (followMode === "UFO") {
-        followMode = null;
-        console.log("🟢 Stop following UFO");
-    } else {
-        followMode = "UFO";
-        console.log("🛸 Start following UFO");
-    }
-    return; // ไม่ต้องเปลี่ยนมุมกล้องแบบอื่น
-}
-
-                if (hit.object.name === 'FogCircle') {
-                fogEnabled = !fogEnabled; // สลับสถานะ
-                toggleFog(fogEnabled);
-                followMode = null;
-                return; 
-                }
-
-                followMode = null;
-
-                camTargetPos.copy(view.pos);
-                camTargetLook.copy(view.tar);
-                isMovingToTarget = true;
-            }
-
-            renderer.domElement.addEventListener('click', onPick);
-            renderer.domElement.addEventListener('touchend', (e) => { onPick(e); }, { passive: true });
-
-            addEventListener('resize', () => {
-                camera.aspect = innerWidth / innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(innerWidth, innerHeight);
-            });
-            function lerp(a, b, t) {
-                return a + (b - a) * t;  
-            }
-
-// Rain 
-const RAIN_COUNT = 800;
-let rainGeo, rainMaterial, rainPoints;
-const rainVel = new Float32Array(RAIN_COUNT);
-let rainLast = 0;
-function initRain() {
-  rainGeo = new THREE.BufferGeometry();
-  const positions = new Float32Array(RAIN_COUNT * 3);
-
-  for (let i = 0; i < RAIN_COUNT; i++) {
-    positions[i * 3 + 0] = (Math.random() - 0.5) * 40;  // X
-    positions[i * 3 + 1] = Math.random() * 25 + 5;       // Y
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 40;  // Z
-    rainVel[i] = 10 + Math.random() * 20; // ความเร็วตก (หน่วย/วินาที)
-  }
-
-  const posAttr = new THREE.BufferAttribute(positions, 3);
-  posAttr.setUsage(THREE.DynamicDrawUsage); // ให้ตำแหน่งอัปเดตได้ทุกเฟรม
-  rainGeo.setAttribute('position', posAttr);
-
-  rainMaterial = new THREE.PointsMaterial({
-    color: 0x99ccff,
-    size: 0.12,
-    transparent: true,
-    opacity: 0.75,
-    depthWrite: false
-  });
-
-  rainPoints = new THREE.Points(rainGeo, rainMaterial);
-  rainPoints.frustumCulled = false;
-  scene.add(rainPoints);
-
-  rainLast = performance.now();
-}
-function updateRain() {
-  if (!rainGeo) return;
-  const now = performance.now();
-  const dt = Math.min(0.1, (now - rainLast) / 1000);
-  rainLast = now;
-
-  const pos = rainGeo.attributes.position.array;
-  for (let i = 0; i < RAIN_COUNT; i++) {
-    const yIndex = i * 3 + 1;
-    pos[yIndex] -= rainVel[i] * dt;
-    if (pos[yIndex] < 0) {
-      // ถ้าตกถึงพื้น ให้รีเซ็ตขึ้นไปด้านบน
-      pos[i * 3 + 0] = (Math.random() - 0.5) * 40;
-      pos[i * 3 + 1] = Math.random() * 25 + 10;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 40;
-      rainVel[i] = 10 + Math.random() * 20;
-    }
-  }
-
-  rainGeo.attributes.position.needsUpdate = true;
-}
-initRain();           
-
-// สร้าง Fog 
-const defaultFog = new THREE.Fog(0x222233, 5, 15);
-scene.fog = defaultFog;
-function toggleFog(enable) {
-    if (enable) {
-        scene.fog = defaultFog; 
-    } else {
-        scene.fog = null; 
-    }
-}
-
-
 // ---------------- UFO Vertex Shader ----------------
 const ufoUniforms = {
   time: { value: 0 },
@@ -506,6 +301,243 @@ scene.add(ufo);
 const ufoLight = new THREE.PointLight(0x4e56c0, 100, 5);
 ufoLight.position.set(10, 1, -12);
 scene.add(ufoLight);
+
+
+const material = new THREE.MeshStandardMaterial({ color: 0xA9A9A9, metalness: 0.9, roughness: 0.2 });
+const glassMaterial = new THREE.MeshPhysicalMaterial({color: 0xfaaaff,metalness: 0,roughness: 0,transmission: 1.0,
+transparent: true,opacity: 1.0,ior: 1.5,thickness: 0.5,clearcoat: 1.0,clearcoatRoughness: 0 });
+
+//click
+const clickable = [];
+
+  function addObj(mesh, pos, name, text = null, fontUrl = 
+  'https://threejs.org/examples/fonts/helvetiker_regular.typeface.json' , ) {
+    mesh.position.copy(pos);
+    mesh.name = name;
+    scene.add(mesh);
+    clickable.push(mesh);
+
+
+    // ถ้ามี text ให้สร้าง TextMesh อยู่ตรงกลาง mesh
+    if (text) {
+        const loader = new THREE.FontLoader();
+        loader.load(fontUrl, function (font) {
+            const textGeometry = new THREE.TextGeometry(text, {
+                font: font,
+                size: 0.4,
+                height: 0.05,
+                curveSegments: 12
+            });
+            textGeometry.center(); // จัดให้ตรงกลาง
+
+            const textMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFFcCcC,
+                metalness: 0.9,
+                roughness: 0.2,
+                emissive: 0x009099, 
+                emissiveIntensity: 1 
+            });
+
+            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            textMesh.position.copy(pos);
+            scene.add(textMesh);
+            textMesh.rotation.y = Math.PI / 2;
+            clickable.push(textMesh);
+        });
+    }
+
+    return mesh;
+}
+
+          addObj(
+          new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16),glassMaterial),new THREE.Vector3(5, 4, 5),'Box','SH'
+          );
+
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(5, 2.5, 5),'OK','Ku'
+            );
+
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(5.0, 1.0, 5.0),
+                'FogCircle',' Fog '
+            );
+
+          addObj(
+          new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16),glassMaterial),new THREE.Vector3(3, 4, -4),'UFO','UFO'
+          );
+
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(3, 1.0, -4),'FloorCircle','Floor'
+            );
+
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(3, 2.5, -4.0),
+                'Fishman','Fish'
+            );
+         
+          addObj(
+                new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 16), glassMaterial),new THREE.Vector3(12.0, 1.0, 14.0),'OB','Back'
+            );
+
+            // --- พรีเซ็ตตำแหน่งกล้องต่อวัตถุ (กำหนดง่าย ๆ) ---
+            const VIEWS = {
+                Box: { pos: new THREE.Vector3(10, 2, 10), tar: new THREE.Vector3(5, 2, 0) },
+                OK: { pos: new THREE.Vector3(19, 3, 12), tar: new THREE.Vector3(0, 0.45, 0) },
+                OB: { pos: new THREE.Vector3(10, 3, 0), tar: new THREE.Vector3(0, 0.45, 0) },
+                FogCircle: { pos: new THREE.Vector3(3, 1.6, -2.0), tar: new THREE.Vector3(2, 0.5, 0) },
+                UFO: { pos: new THREE.Vector3(19, 3, 12), tar: new THREE.Vector3(0, 0.45, 0) },
+                FloorCircle: { pos: new THREE.Vector3(20, 15, 15), tar: new THREE.Vector3(0, 0.45, 0) },
+                Fishman: { pos: new THREE.Vector3(9, 2.5, -0.5), tar: new THREE.Vector3(10, 3 , -4.5) },
+            };
+
+            // --- Raycaster + คลิกเพื่อสลับมุม ---
+            const raycaster = new THREE.Raycaster();
+            const pointer = new THREE.Vector2();
+            let pickedObjPostion = new THREE.Vector3();
+
+            function setPointer(e) {
+                const r = renderer.domElement.getBoundingClientRect();
+                const x = (e.clientX ?? e.touches[0].clientX) - r.left;
+                const y = (e.clientY ?? e.touches[0].clientY) - r.top;
+                pointer.x = (x / r.width) * 2 - 1;
+                pointer.y = -(y / r.height) * 2 + 1;
+
+            }
+
+            function onPick(e) {
+                setPointer(e);
+                raycaster.setFromCamera(pointer, camera);
+                const hit = raycaster.intersectObjects(clickable, false)[0];
+                if (!hit) 
+                    return;
+                const view = VIEWS[hit.object.name];
+                //pickedObjPostion = hit.object.position;
+                if (!view) return;
+
+                if (hit.object.name === 'Box') {
+        if (followMode === "shark") {
+            followMode = null;
+            console.log("🟢 Stop following shark");
+        } else {
+            followMode = "shark";
+            console.log("🦈 Start following shark");
+        }
+        return; // ไม่ต้องเปลี่ยนมุมกล้องแบบอื่น
+        }
+
+                if (hit.object.name === 'UFO') {
+    if (followMode === "UFO") {
+        followMode = null;
+        console.log("🟢 Stop following UFO");
+    } else {
+        followMode = "UFO";
+        console.log("🛸 Start following UFO");
+    }
+    return; // ไม่ต้องเปลี่ยนมุมกล้องแบบอื่น
+}
+
+                if (hit.object.name === 'FogCircle') {
+                fogEnabled = !fogEnabled; // สลับสถานะ
+                toggleFog(fogEnabled);
+                followMode = null;
+                return; 
+                }
+
+                if (hit.object.name === 'FloorCircle') {
+  floorEnabled = !floorEnabled;       // สลับสถานะเปิด/ปิดพื้น
+  toggleFloor(floorEnabled);          // เรียกฟังก์ชัน toggle
+  followMode = null;
+  return;
+}
+
+                followMode = null;
+
+                camTargetPos.copy(view.pos);
+                camTargetLook.copy(view.tar);
+                isMovingToTarget = true;
+            }
+
+            renderer.domElement.addEventListener('click', onPick);
+            renderer.domElement.addEventListener('touchend', (e) => { onPick(e); }, { passive: true });
+
+            addEventListener('resize', () => {
+                camera.aspect = innerWidth / innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(innerWidth, innerHeight);
+            });
+            function lerp(a, b, t) {
+                return a + (b - a) * t;  
+            }
+
+
+
+// Rain 
+const RAIN_COUNT = 800;
+let rainGeo, rainMaterial, rainPoints;
+const rainVel = new Float32Array(RAIN_COUNT);
+let rainLast = 0;
+function initRain() {
+  rainGeo = new THREE.BufferGeometry();
+  const positions = new Float32Array(RAIN_COUNT * 3);
+
+  for (let i = 0; i < RAIN_COUNT; i++) {
+    positions[i * 3 + 0] = (Math.random() - 0.5) * 40;  // X
+    positions[i * 3 + 1] = Math.random() * 25 + 5;       // Y
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 40;  // Z
+    rainVel[i] = 10 + Math.random() * 20; // ความเร็วตก (หน่วย/วินาที)
+  }
+
+  const posAttr = new THREE.BufferAttribute(positions, 3);
+  posAttr.setUsage(THREE.DynamicDrawUsage); // ให้ตำแหน่งอัปเดตได้ทุกเฟรม
+  rainGeo.setAttribute('position', posAttr);
+
+  rainMaterial = new THREE.PointsMaterial({
+    color: 0x99ccff,
+    size: 0.12,
+    transparent: true,
+    opacity: 0.75,
+    depthWrite: false
+  });
+
+  rainPoints = new THREE.Points(rainGeo, rainMaterial);
+  rainPoints.frustumCulled = false;
+  scene.add(rainPoints);
+
+  rainLast = performance.now();
+}
+function updateRain() {
+  if (!rainGeo) return;
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - rainLast) / 1000);
+  rainLast = now;
+
+  const pos = rainGeo.attributes.position.array;
+  for (let i = 0; i < RAIN_COUNT; i++) {
+    const yIndex = i * 3 + 1;
+    pos[yIndex] -= rainVel[i] * dt;
+    if (pos[yIndex] < 0) {
+      // ถ้าตกถึงพื้น ให้รีเซ็ตขึ้นไปด้านบน
+      pos[i * 3 + 0] = (Math.random() - 0.5) * 40;
+      pos[i * 3 + 1] = Math.random() * 25 + 10;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 40;
+      rainVel[i] = 10 + Math.random() * 20;
+    }
+  }
+
+  rainGeo.attributes.position.needsUpdate = true;
+}
+initRain();           
+
+// สร้าง Fog 
+const defaultFog = new THREE.Fog(0x222233, 5, 20);
+scene.fog = defaultFog;
+function toggleFog(enable) {
+    if (enable) {
+        scene.fog = defaultFog; 
+    } else {
+        scene.fog = null; 
+    }
+}
 
 
 
